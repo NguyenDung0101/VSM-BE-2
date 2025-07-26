@@ -70,10 +70,86 @@ model Event {
   @@map("events")
 }
 
+model EventRegistration {
+  id                String             @id @default(uuid())
+  fullName          String
+  email             String
+  phone             String
+  emergencyContact  String
+  emergencyPhone    String?
+  medicalConditions String?            @db.Text
+  experience        ExperienceLevel
+  status            RegistrationStatus @default(PENDING)
+  registeredAt      DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  // Relations
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+
+  @@unique([eventId, userId])
+  @@map("event_registrations")
+}
+
+model Product {
+  id            String          @id @default(uuid())
+  name          String
+  description   String          @db.Text
+  price         Int
+  originalPrice Int?
+  images        String          @db.Text // JSON array stored as text
+  category      ProductCategory
+  inStock       Boolean         @default(true)
+  stock         Int             @default(0)
+  featured      Boolean         @default(false)
+  rating        Float           @default(0.0)
+  reviews       Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("products")
+}
+
+model Comment {
+  id        String        @id @default(uuid())
+  content   String        @db.Text
+  status    CommentStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId   String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+
+  // Self-referential for replies
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId String?
+  replies  Comment[] @relation("CommentReplies")
+
+  @@map("comments")
+}
+
+// Enums
 enum Role {
   USER
   EDITOR
   ADMIN
+}
+
+enum PostCategory {
+  TRAINING
+  NUTRITION
+  EVENTS
+  TIPS
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
 }
 
 enum EventCategory {
@@ -91,4 +167,30 @@ enum EventStatus {
   ONGOING
   COMPLETED
   CANCELLED
+}
+
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  WAITLIST
+  CANCELLED
+}
+
+enum ProductCategory {
+  APPAREL
+  ACCESSORIES
+  NUTRITION
+  EQUIPMENT
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
