@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  avatar    String? // Đường dẫn ảnh (sẽ lấy từ Image)
+  avatarId  String?  @unique
+  image     Image?   @relation("UserToImage")
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Thêm quan hệ ngược lại với Event
+  events    Event[]  @relation("EventAuthor") // Danh sách các Event mà User là tác giả
+
+  @@map("users")
+}
+
+model Image {
+  id        String   @id @default(uuid())
+  url       String // Đường dẫn ảnh (ví dụ: /image/avatars/avatar_123.jpg hoặc /image/event_posts/event_123.jpg)
+  type      String // Loại ảnh (avatar, event_post, etc.)
+  user      User?    @relation("UserToImage", fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?  @unique
+  event     Event?   @relation("EventToImage", fields: [eventId], references: [id], onDelete: SetNull)
+  eventId   String?  @unique
+  createdAt DateTime @default(now())
+
+  @@map("images")
+}
+
+model Event {
+  id                   String        @id @default(uuid())
+  name                 String
+  description          String        @db.Text
+  content              String        @db.LongText
+  date                 DateTime
+  location             String
+  imageEvent           String? // Đường dẫn ảnh (sẽ lấy từ Image)
+  maxParticipants      Int
+  currentParticipants  Int           @default(0)
+  category             EventCategory
+  status               EventStatus   @default(UPCOMING)
+  distance             String?
+  registrationFee      Int?          @default(0)
+  requirements         String?       @db.Text
+  published            Boolean       @default(true)
+  featured             Boolean       @default(false)
+  registrationDeadline DateTime?
+  organizer            String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  // Relations
+  author   User    @relation("EventAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+  imageId  String? @unique
+  image    Image?  @relation("EventToImage")
+
+  @@map("events")
+}
+
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+}
+
+enum EventCategory {
+  MARATHON
+  HALF_MARATHON
+  FIVE_K
+  TEN_K
+  FUN_RUN
+  TRAIL_RUN
+  NIGHT_RUN
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
